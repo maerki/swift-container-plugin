@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 import ContainerRegistry
+import struct Foundation.Data
 
 extension ImageSource {
     /// Copies a blob from another registry to this one.
