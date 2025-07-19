@@ -24,11 +24,18 @@ extension RegistryClient: ImageDestination {
         // - POST to obtain a session ID.
         // - Do not include the digest.
         // Response will include a 'Location' header telling us where to PUT the blob data.
-        let httpResponse = try await executeRequestThrowing(
-            .post(repository, path: "blobs/uploads/"),
-            expectingStatus: .accepted,  // expected response code for a "two-shot" upload
-            decodingErrors: [.notFound]
-        )
+        do {
+    let httpResponse = try await executeRequestThrowing(
+        .post(repository, path: "blobs/uploads/"),
+        expectingStatus: .accepted,  // expected response code for a "two-shot" upload
+        decodingErrors: [.notFound]
+    )
+    print("✅ Upload initiated successfully: \(httpResponse.status) from \(httpResponse.url?.absoluteString ?? "unknown URL")")
+} catch {
+    print("❌ Failed to initiate upload to \(repository)/blobs/uploads/")
+    print("🧵 Error: \(error)")
+    throw error
+}
 
         guard let location = httpResponse.response.headerFields[.location] else {
             throw HTTPClientError.missingResponseHeader("Location")
