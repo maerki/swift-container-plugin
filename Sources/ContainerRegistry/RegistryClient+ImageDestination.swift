@@ -19,44 +19,43 @@ import HTTPTypes
 extension RegistryClient: ImageDestination {
     // Internal helper method to initiate a blob upload in 'two shot' mode
     func startBlobUploadSession(repository: ImageReference.Repository) async throws -> URL {
-        // Upload in "two shot" mode.
-        // See https://github.com/opencontainers/distribution-spec/blob/main/spec.md#post-then-put
-        // - POST to obtain a session ID.
-        // - Do not include the digest.
-        // Response will include a 'Location' header telling us where to PUT the blob data.
-        let httpResponse: HTTPResponse
-        do {
-    httpResponse = try await executeRequestThrowing(
-        .post(repository, path: "blobs/uploads/"),
-        expectingStatus: .accepted,  // expected response code for a "two-shot" upload
-        decodingErrors: [.notFound]
-    )
-    print("✅ Upload initiated successfully: \(httpResponse.status) from \(httpResponse.url?.absoluteString ?? "unknown URL")")
-} catch {
-    print("❌ Failed to initiate upload to \(repository)/blobs/uploads/")
-    print("🧵 Error: \(error)")
-    throw error
-}
+    print("🚀 Starting blob upload session for repository: \(repository)")
 
-        guard let location = httpResponse.response.headerFields[.location] else {
-            throw HTTPClientError.missingResponseHeader("Location")
-        }
-
-        guard let locationURL = URL(string: location) else {
-            throw RegistryClientError.invalidUploadLocation("\(location)")
-        }
-
-        // The location may be either an absolute URL or a relative URL
-        // If it is relative we need to make it absolute
-        guard locationURL.host != nil else {
-            guard let absoluteURL = URL(string: location, relativeTo: registryURL) else {
-                throw RegistryClientError.invalidUploadLocation("\(location)")
-            }
-            return absoluteURL
-        }
-
-        return locationURL
+    let httpResponse: HTTPResponse
+    do {
+        httpResponse = try await executeRequestThrowing(
+            .post(repository, path: "blobs/uploads/"),
+            expectingStatus: .accepted,
+            decodingErrors: [.notFound]
+        )
+        print("✅ Upload initiated successfully")
+        print("🔗 Status: \(httpResponse.status)")
+        print("🔗 Response URL: \(httpResponse.url?.absoluteString ?? "unknown")")
+        print("🔗 Header fields: \(httpResponse.response.headerFields)")
+    } catch {
+        print("❌ Failed to initiate upload to \(repository)/blobs/uploads/")
+        print("🧵 Error: \(error)")
+        throw error
     }
+
+    guard let location = httpResponse.response.headerFields[.location] else {
+        print("❌ Missing 'Location' header in response")
+        throw HTTPClientError.missingResponseHeader("Location")
+    }
+
+    print("📍 Received Location header: \(location)")
+
+    if let locationURL = URL(string: location), locationURL.host != nil {
+        print("🌍 Using absolute location URL: \(locationURL)")
+        return locationURL
+    } else if let absoluteURL = URL(string: location, relativeTo: registryURL) {
+        print("🧭 Resolved relative location to absolute URL: \(absoluteURL)")
+        return absoluteURL
+    } else {
+        print("❌ Failed to parse upload location URL from: \(location)")
+        throw RegistryClientError.invalidUploadLocation(location)
+    }
+}
 
     /// Checks whether a blob exists.
     ///
