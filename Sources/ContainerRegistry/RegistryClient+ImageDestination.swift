@@ -22,21 +22,21 @@ extension RegistryClient: ImageDestination {
     print("🚀 Starting blob upload session for repository: \(repository)")
 
     let httpResponse: (data: Data, response: HTTPResponse)
-    do {
-        httpResponse = try await executeRequestThrowing(
-            .post(repository, path: "blobs/uploads/"),
-            expectingStatus: .accepted,
-            decodingErrors: [.notFound]
-        )
-        print("✅ Upload initiated successfully")
-        print("🔗 Status: \(httpResponse.status)")
-        print("🔗 Response URL: \(httpResponse.url?.absoluteString ?? "unknown")")
-        print("🔗 Header fields: \(httpResponse.response.headerFields)")
-    } catch {
-        print("❌ Failed to initiate upload to \(repository)/blobs/uploads/")
-        print("🧵 Error: \(error)")
-        throw error
-    }
+do {
+    httpResponse = try await executeRequestThrowing(
+        .post(repository, path: "blobs/uploads/"),
+        expectingStatus: .accepted,
+        decodingErrors: [.notFound]
+    )
+    print("✅ Upload initiated successfully")
+    print("🔗 Status: \(httpResponse.response.status)")
+    print("🔗 Response URL: \(httpResponse.response.url?.absoluteString ?? "unknown")")
+    print("🔗 Header fields: \(httpResponse.response.headerFields)")
+} catch {
+    print("❌ Failed to initiate upload to \(repository)/blobs/uploads/")
+    print("🧵 Error: \(error)")
+    throw error
+}
 
     guard let location = httpResponse.response.headerFields[.location] else {
         print("❌ Missing 'Location' header in response")
