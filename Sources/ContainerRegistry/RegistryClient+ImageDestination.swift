@@ -21,7 +21,7 @@ extension RegistryClient: ImageDestination {
     func startBlobUploadSession(repository: ImageReference.Repository) async throws -> URL {
     print("🚀 Starting blob upload session for repository: \(repository)")
 
-    let httpResponse: HTTPResponse
+    let httpResponse: (Data, HTTPResponse)
     do {
         httpResponse = try await executeRequestThrowing(
             .post(repository, path: "blobs/uploads/"),
