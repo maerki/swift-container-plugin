@@ -53,7 +53,7 @@ extension ImageSource {
     }
 
     log("📤 Layer \(digest): pushing to destination")
-    let uploaded: (digest: String, size: Int)
+    let uploaded: ContentDescriptor
     do {
         uploaded = try await destClient.putBlob(repository: destRepository, data: blob)
         log("📬 Layer \(digest): successfully uploaded (digest: \(uploaded.digest), size: \(uploaded.size))")
