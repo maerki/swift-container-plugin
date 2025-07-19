@@ -23,25 +23,49 @@ extension ImageSource {
     ///   - destRepository: The repository on this registry to which the blob should be copied.
     /// - Throws: If the copy cannot be completed.
     func copyBlob(
-        digest: ImageReference.Digest,
-        fromRepository sourceRepository: ImageReference.Repository,
-        toClient destClient: ImageDestination,
-        toRepository destRepository: ImageReference.Repository
-    ) async throws {
-        if try await destClient.blobExists(repository: destRepository, digest: digest) {
-            log("Layer \(digest): already exists")
-            return
-        }
+    digest: ImageReference.Digest,
+    fromRepository sourceRepository: ImageReference.Repository,
+    toClient destClient: ImageDestination,
+    toRepository destRepository: ImageReference.Repository
+) async throws {
+    log("""
+    📦 Starting blob copy:
+      • Digest: \(digest)
+      • Source repository: \(sourceRepository)
+      • Destination repository: \(destRepository)
+    """)
 
-        log("Layer \(digest): fetching")
-        let blob = try await getBlob(repository: sourceRepository, digest: digest)
-
-        log("Layer \(digest): pushing")
-        let uploaded = try await destClient.putBlob(repository: destRepository, data: blob)
-        log("Layer \(digest): done")
-
-        guard "\(digest)" == uploaded.digest else {
-            throw RegistryClientError.digestMismatch(expected: "\(digest)", registry: uploaded.digest)
-        }
+    log("🔍 Checking if layer \(digest) exists in destination repository")
+    if try await destClient.blobExists(repository: destRepository, digest: digest) {
+        log("✅ Layer \(digest): already exists in destination")
+        return
     }
+
+    log("📥 Layer \(digest): fetching from source")
+    let blob: Data
+    do {
+        blob = try await getBlob(repository: sourceRepository, digest: digest)
+        log("📦 Layer \(digest): successfully fetched (\(blob.count) bytes)")
+    } catch {
+        log("❌ Failed to fetch layer \(digest): \(error)")
+        throw error
+    }
+
+    log("📤 Layer \(digest): pushing to destination")
+    let uploaded: (digest: String, size: Int)
+    do {
+        uploaded = try await destClient.putBlob(repository: destRepository, data: blob)
+        log("📬 Layer \(digest): successfully uploaded (digest: \(uploaded.digest), size: \(uploaded.size))")
+    } catch {
+        log("❌ Failed to upload layer \(digest): \(error)")
+        throw error
+    }
+
+    if "\(digest)" != uploaded.digest {
+        log("⚠️ Digest mismatch: expected \(digest), got \(uploaded.digest)")
+        throw RegistryClientError.digestMismatch(expected: "\(digest)", registry: uploaded.digest)
+    }
+
+    log("✅ Layer \(digest): copy complete")
+}
 }
