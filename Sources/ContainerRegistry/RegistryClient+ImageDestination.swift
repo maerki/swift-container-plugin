@@ -29,9 +29,8 @@ do {
         decodingErrors: [.notFound]
     )
     print("✅ Upload initiated successfully")
-    print("🔗 Status: \(httpResponse.response.status)")
-    print("🔗 Response URL: \(httpResponse.response.url?.absoluteString ?? "unknown")")
-    print("🔗 Header fields: \(httpResponse.response.headerFields)")
+    
+
 } catch {
     print("❌ Failed to initiate upload to \(repository)/blobs/uploads/")
     print("🧵 Error: \(error)")
