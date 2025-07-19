@@ -33,6 +33,7 @@ extension RegistryClient: ImageSource {
     ).data
     print("✅ Successfully fetched blob \(digest) from \(repository)")
     // Optional: print("📦 Data size: \(data.count) bytes")
+    return data
 } catch {
     print("❌ Failed to fetch blob \(digest) from \(repository)")
     print("🧵 Error: \(error)")
