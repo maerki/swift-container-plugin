@@ -62,34 +62,40 @@ extension URLSession: HTTPClient {
     /// - Returns: An HTTPResponse representing the response, if the response was valid.
     /// - Throws: If the server response is unexpected or indicates that an error occurred.
     func validateAPIResponseThrowing(
-        request: HTTPRequest,
-        response: HTTPResponse,
-        responseData: Data,
-        expectingStatus successfulStatus: HTTPResponse.Status
-    ) throws -> HTTPResponse {
-        // Convert errors into exceptions
-        guard response.status == successfulStatus else {
-            // If the response includes an authentication challenge the client can try again,
-            // presenting the challenge response.
-            if response.status == .unauthorized {
-                if let authChallenge = response.headerFields[.wwwAuthenticate] {
-                    throw HTTPClientError.authenticationChallenge(
-                        challenge: authChallenge.trimmingCharacters(in: .whitespacesAndNewlines),
-                        request: request,
-                        response: response
-                    )
-                }
-            }
+    request: HTTPRequest,
+    response: HTTPResponse,
+    responseData: Data,
+    expectingStatus successfulStatus: HTTPResponse.Status
+) throws -> HTTPResponse {
+    guard response.status == successfulStatus else {
 
-            // A HEAD request has no response body and cannot be decoded
-            if request.method == .head {
-                throw HTTPClientError.unexpectedStatusCode(status: response.status, response: response, data: nil)
-            }
-            throw HTTPClientError.unexpectedStatusCode(status: response.status, response: response, data: responseData)
+        if response.status == .unauthorized,
+           let authChallenge = response.headerFields[.wwwAuthenticate] {
+            throw HTTPClientError.authenticationChallenge(
+                challenge: authChallenge.trimmingCharacters(in: .whitespacesAndNewlines),
+                request: request,
+                response: response
+            )
+        }
+        else {
+             print("❌ Unexpected status: \(response.status) for request \(request.method.rawValue) \(request.url)")
+
+        if let bodyString = String(data: responseData, encoding: .utf8) {
+            print("📦 Response body:\n\(bodyString)")
+        } else {
+            print("📦 Response body is not valid UTF-8")
+        }
         }
 
-        return response
+        if request.method == .head {
+            throw HTTPClientError.unexpectedStatusCode(status: response.status, response: response, data: nil)
+        }
+
+        throw HTTPClientError.unexpectedStatusCode(status: response.status, response: response, data: responseData)
     }
+
+    return response
+}
 
     /// Execute an HTTP request with no request body.
     /// - Parameters:
